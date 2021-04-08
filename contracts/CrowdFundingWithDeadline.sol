@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.4.22 <0.9.0;
 
-contract CrowdFunding {
+contract CrowdFundingWithDeadline {
     enum State {Ongoing, Failed, Succeeded, PaidOut}
 
     string public name;
@@ -11,11 +11,15 @@ contract CrowdFunding {
 
     State public state;
 
-    constructor(string memory contractName, uint  targetAmountInEth, uint  DurationInMin, address  beneficiary){
+    constructor(string memory contractName, uint  targetAmountInEth, uint  DurationInMin, address  beneficiary)public{
         name = contractName;
         targetAmount= targetAmountInEth * 1 ether; //converts ether to wei
-        fundingDeadline = block.timestamp + DurationInMin * 1 minutes;
+        fundingDeadline = currentTime() + DurationInMin * 1 minutes;
         beneficiaryAddress = beneficiary;
         state = State.Ongoing;
+    }
+
+    function currentTime() internal view returns(uint){
+        return block.timestamp;
     }
 }
