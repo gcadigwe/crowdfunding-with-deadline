@@ -8,8 +8,16 @@ contract CrowdFundingWithDeadline {
     uint public targetAmount;
     uint public fundingDeadline;
     address public beneficiaryAddress;
+    mapping(address => uint) public amounts;
+    bool public collected;
+    uint public totalCollected;
 
     State public state;
+
+    modifier inState(State expectedState){
+        require(state == expectedState, "invalid state");
+        _;
+    }
 
     constructor(string memory contractName, uint  targetAmountInEth, uint  DurationInMin, address  beneficiary)public{
         name = contractName;
@@ -17,6 +25,16 @@ contract CrowdFundingWithDeadline {
         fundingDeadline = currentTime() + DurationInMin * 1 minutes;
         beneficiaryAddress = beneficiary;
         state = State.Ongoing;
+    }
+
+    function contribute () public payable inState(State.Ongoing){
+        amounts[msg.sender] += msg.value;
+        totalCollected += msg.value;
+
+        if(totalCollected >= targetAmount){
+            collected = true;
+        }
+
     }
 
     function currentTime() internal view returns(uint){
