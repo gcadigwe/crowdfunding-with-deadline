@@ -28,6 +28,8 @@ contract CrowdFundingWithDeadline {
     }
 
     function contribute () public payable inState(State.Ongoing){
+        require(beforeDeadline());
+        
         amounts[msg.sender] += msg.value;
         totalCollected += msg.value;
 
@@ -37,7 +39,28 @@ contract CrowdFundingWithDeadline {
 
     }
 
-    function currentTime() internal view returns(uint){
+    function collect() public inState(state.Succeeded){
+        if(beneficiaryAddress.send(totalCollected)){
+            state = State.PaidOut;
+        }else{
+            state = State.Failed;
+        }
+    }
+
+    function finishCrowdFunding() public inState(State.Ongoing){
+        require (!beforeDeadline());
+        if(collected){
+            state = State.Failed;
+        }else {
+            state = State.Succeeded;
+        }
+    }
+
+    function beforeDeadline() public view returns(bool){
+        return currentTime() < fundingDeadline;
+    }
+
+    function currentTime() internal view  returns(uint){
         return block.timestamp;
     }
 }
