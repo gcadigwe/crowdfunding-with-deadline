@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity >=0.4.22 <0.9.0;
 
 contract CrowdFundingWithDeadline {
@@ -19,7 +20,13 @@ contract CrowdFundingWithDeadline {
         _;
     }
 
-    constructor(string memory contractName, uint  targetAmountInEth, uint  DurationInMin, address  beneficiary)public{
+    event CampainFinished (
+        address addr,
+        uint totalCollect,
+        bool succeeded
+    );
+
+    constructor(string memory contractName, uint  targetAmountInEth, uint  DurationInMin, address beneficiary)public{
         name = contractName;
         targetAmount= targetAmountInEth * 1 ether; //converts ether to wei
         fundingDeadline = currentTime() + DurationInMin * 1 minutes;
@@ -39,11 +46,21 @@ contract CrowdFundingWithDeadline {
 
     }
 
-    function collect() public inState(state.Succeeded){
+    function collect() public inState(State.Succeeded){
         if(beneficiaryAddress.send(totalCollected)){
             state = State.PaidOut;
         }else{
             state = State.Failed;
+        }
+    }
+
+    function withdraw() public  inState(State.Failed){
+        require(amounts[msg.sender] > 0, "Nothing was contributed");
+        uint contributed = amounts[msg.sender];
+        amounts[msg.sender] = 0;
+
+        if(!msg.sender.send(contributed)){
+            amounts[msg.sender] = contributed;
         }
     }
 
@@ -54,9 +71,11 @@ contract CrowdFundingWithDeadline {
         }else {
             state = State.Succeeded;
         }
+
+        emit CampainFinished(this, totalCollected, collected);
     }
 
-    function beforeDeadline() public view returns(bool){
+    function beforeDeadline() internal view returns(bool){
         return currentTime() < fundingDeadline;
     }
 
